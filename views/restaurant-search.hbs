@@ -1,0 +1,115 @@
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card search-card border-0">
+            <div class="card-header text-center">
+                <h2 class="mb-0">🔍 Find Your Perfect Dining Experience</h2>
+                <p class="mb-0 mt-2 opacity-75">Search through our curated collection of restaurants</p>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="/restaurants/search/results" class="row g-4">
+                    <div class="col-md-6">
+                        <label for="city" class="form-label">📍 City</label>
+                        <input type="text" class="form-control" id="city" name="city" 
+                               value="{{searchParams.city}}" placeholder="Enter city name...">
+                        <div class="form-text">e.g., Toronto, New York, London</div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="cuisine" class="form-label">🍕 Cuisine Type</label>
+                        <input type="text" class="form-control" id="cuisine" name="cuisine" 
+                               value="{{searchParams.cuisine}}" placeholder="What are you craving?">
+                        <div class="form-text">e.g., Italian, Chinese, Mexican</div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="minRating" class="form-label">⭐ Minimum Rating</label>
+                        <input type="number" class="form-control" id="minRating" name="minRating" 
+                               value="{{searchParams.minRating}}" min="0" max="5" step="0.1" 
+                               placeholder="0-5">
+                        <div class="form-text">From 0 to 5 stars</div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="perPage" class="form-label">📄 Results per page</label>
+                        <select class="form-select" id="perPage" name="perPage">
+                            <option value="6" {{#if (eq searchParams.perPage 6)}}selected{{/if}}>6 Results</option>
+                            <option value="12" {{#if (eq searchParams.perPage 12)}}selected{{/if}}>12 Results</option>
+                            <option value="18" {{#if (eq searchParams.perPage 18)}}selected{{/if}}>18 Results</option>
+                            <option value="24" {{#if (eq searchParams.perPage 24)}}selected{{/if}}>24 Results</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="form-label">💰 Price Range</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="priceRange" id="price1" value="$" autocomplete="off">
+                            <label class="btn btn-outline-success" for="price1">$</label>
+                            
+                            <input type="radio" class="btn-check" name="priceRange" id="price2" value="$$" autocomplete="off">
+                            <label class="btn btn-outline-warning" for="price2">$$</label>
+                            
+                            <input type="radio" class="btn-check" name="priceRange" id="price3" value="$$$" autocomplete="off">
+                            <label class="btn btn-outline-orange" for="price3">$$$</label>
+                            
+                            <input type="radio" class="btn-check" name="priceRange" id="price4" value="$$$$" autocomplete="off">
+                            <label class="btn btn-outline-danger" for="price4">$$$$</label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="d-flex gap-3 justify-content-center flex-wrap">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                🔍 Search Restaurants
+                            </button>
+                            <a href="/restaurants/search" class="btn btn-outline-secondary btn-lg px-5">
+                                🗑️ Clear Filters
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{#if errors}}
+        <div class="alert alert-danger mt-4">
+            <h5>⚠️ Please fix the following errors:</h5>
+            <ul class="mb-0">
+                {{#each errors}}
+                <li>{{this.msg}}</li>
+                {{/each}}
+            </ul>
+        </div>
+        {{/if}}
+    </div>
+</div>
+
+<!-- Quick Search Suggestions -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card border-0 bg-light">
+            <div class="card-body text-center">
+                <h5 class="mb-3">🎯 Quick Search Suggestions</h5>
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a href="/restaurants/search/results?cuisine=Italian&perPage=12" class="btn btn-outline-primary btn-sm">
+                        🍝 Italian
+                    </a>
+                    <a href="/restaurants/search/results?cuisine=Chinese&perPage=12" class="btn btn-outline-primary btn-sm">
+                        🥡 Chinese
+                    </a>
+                    <a href="/restaurants/search/results?cuisine=Mexican&perPage=12" class="btn btn-outline-primary btn-sm">
+                        🌮 Mexican
+                    </a>
+                    <a href="/restaurants/search/results?cuisine=Japanese&perPage=12" class="btn btn-outline-primary btn-sm">
+                        🍣 Japanese
+                    </a>
+                    <a href="/restaurants/search/results?minRating=4.5&perPage=12" class="btn btn-outline-success btn-sm">
+                        ⭐ Top Rated
+                    </a>
+                    <a href="/restaurants/search/results?hasWifi=true&perPage=12" class="btn btn-outline-info btn-sm">
+                        📶 WiFi Available
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

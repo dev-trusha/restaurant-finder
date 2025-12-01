@@ -1,0 +1,166 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">🍽️ Search Results</h2>
+        <p class="text-muted mb-0">We found the perfect spots for you</p>
+    </div>
+    <a href="/restaurants/search" class="btn btn-outline-primary">
+        🔄 New Search
+    </a>
+</div>
+
+{{#if restaurants.length}}
+    <div class="alert alert-info">
+        <strong>🎉 Found {{pagination.total}} restaurants</strong> matching your criteria
+    </div>
+
+    <div class="row g-4">
+        {{#each restaurants}}
+        <div class="col-xl-4 col-lg-6 col-md-6">
+            <div class="card restaurant-card h-100">
+                {{#if this.image}}
+                <img src="{{this.image}}" class="card-img-top restaurant-image" alt="{{this.name}}" 
+                     onerror="this.src='https://picsum.photos/400/300?food'">
+                {{else}}
+                <img src="https://picsum.photos/400/300?food" class="card-img-top restaurant-image" alt="{{this.name}}">
+                {{/if}}
+                
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{this.name}}</h5>
+                        <span class="price-indicator 
+                            {{#if (eq this.priceRange '$')}}price-low{{/if}}
+                            {{#if (eq this.priceRange '$$')}}price-medium{{/if}}
+                            {{#if (eq this.priceRange '$$$')}}price-high{{/if}}
+                            {{#if (eq this.priceRange '$$$$')}}price-premium{{/if}}">
+                            {{this.priceRange}}
+                        </span>
+                    </div>
+                    
+                    <div class="restaurant-badges mb-3">
+                        <span class="badge rating-badge me-2">
+                            ⭐ {{this.rating}}/5
+                        </span>
+                        <span class="badge bg-secondary me-2">
+                            💰 {{this.currency}} {{this.averageCostForTwo}}
+                        </span>
+                        {{#if this.hasWifi}}
+                        <span class="badge bg-success">📶 WiFi</span>
+                        {{/if}}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <p class="card-text mb-2">
+                            <strong>📍</strong> {{this.address.city}}, {{this.address.country}}
+                        </p>
+                        <p class="card-text mb-2">
+                            <strong>🍴</strong> {{join this.cuisines ", "}}
+                        </p>
+                    </div>
+                    
+                    <div class="amenities mb-3">
+                        {{#each this.amenities}}
+                        <span class="badge amenity-badge">{{this}}</span>
+                        {{/each}}
+                    </div>
+                    
+                    <div class="mt-auto">
+                        <div class="d-grid gap-2">
+                            <a href="/restaurants/{{this._id}}" class="btn btn-primary">
+                                View Details 👀
+                            </a>
+                            <div class="btn-group" role="group">
+                                <a href="/restaurants/{{this._id}}/edit" class="btn btn-outline-warning">
+                                    ✏️ Edit
+                                </a>
+                                <a href="/restaurants/{{this._id}}/delete" class="btn btn-outline-danger">
+                                    🗑️ Delete
+                                </a>
+                            </div>
+                        </div>
+                    </div>                
+                </div>
+            </div>
+        </div>
+        {{/each}}
+    </div>
+
+<!-- Simple Pagination -->
+{{#if pagination.totalPages}}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <nav aria-label="Search results pagination">
+                    <!-- Page Navigation Buttons -->
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <ul class="pagination mb-0">
+                            <!-- Previous Button -->
+                            <li class="page-item {{#unless pagination.hasPrev}}disabled{{/unless}}">
+                                <a class="page-link" href="{{pagination.prevUrl}}" 
+                                   {{#unless pagination.hasPrev}}tabindex="-1" aria-disabled="true"{{/unless}}>
+                                    &laquo; Previous
+                                </a>
+                            </li>
+
+                            <!-- Current Page Info -->
+                            <li class="page-item disabled">
+                                <span class="page-link fw-bold">
+                                    Page {{pagination.page}} of {{pagination.totalPages}}
+                                </span>
+                            </li>
+
+                            <!-- Next Button -->
+                            <li class="page-item {{#unless pagination.hasNext}}disabled{{/unless}}">
+                                <a class="page-link" href="{{pagination.nextUrl}}"
+                                   {{#unless pagination.hasNext}}tabindex="-1" aria-disabled="true"{{/unless}}>
+                                    Next &raquo;
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Jump to Page Form -->
+                    <div class="text-center">
+                        <form method="GET" action="/restaurants/search/results" class="d-inline-block">
+                            <input type="hidden" name="perPage" value="{{searchParams.perPage}}">
+                            <input type="hidden" name="city" value="{{searchParams.city}}">
+                            <input type="hidden" name="cuisine" value="{{searchParams.cuisine}}">
+                            <input type="hidden" name="minRating" value="{{searchParams.minRating}}">
+                            
+                            <div class="input-group" style="max-width: 400px;">
+                                <span class="input-group-text bg-light border-end-0">Go to page</span>
+                                <input type="number" 
+                                       name="page" 
+                                       class="form-control" 
+                                       min="1" 
+                                       max="{{pagination.totalPages}}" 
+                                       value="{{pagination.page}}"
+                                       style="width: 70px; text-align: center;">
+                                <span class="input-group-text bg-light border-start-0 border-end-0">
+                                    of {{pagination.totalPages}}
+                                </span>
+                                <button class="btn btn-primary px-4" type="submit">Go</button>
+                            </div>
+                            <div class="form-text mt-1">
+                                <small>Enter a page number between 1 and {{pagination.totalPages}}</small>
+                            </div>
+                        </form>
+                    </div>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{{/if}}
+
+{{else}}
+    <div class="alert alert-warning text-center py-5">
+        <div class="display-1 mb-4">🍽️</div>
+        <h4>No restaurants found</h4>
+        <p class="mb-4">Try adjusting your search criteria or explore different filters</p>
+        <div class="d-flex gap-3 justify-content-center flex-wrap">
+            <a href="/restaurants/search" class="btn btn-primary">New Search</a>
+            <a href="/" class="btn btn-outline-secondary">Go Home</a>
+        </div>
+    </div>
+{{/if}}

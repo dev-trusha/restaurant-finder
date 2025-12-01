@@ -1,0 +1,4 @@
+# ignore dataset files
+*.csv
+*.json
+*.env

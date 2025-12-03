@@ -95,9 +95,9 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 //for vercel deployment
-app.use(express.static('public'));
+// app.use(express.static('public'));
 
 // API Routes
 app.use('/api/restaurants', require('./routes/restaurants'));

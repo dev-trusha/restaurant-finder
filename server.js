@@ -1,4 +1,5 @@
 require('dotenv').config();
+const cors = require('cors');
 const express = require('express');
 const mongoose = require('mongoose');
 const exphbs = require('express-handlebars');
@@ -91,9 +92,10 @@ app.set('view engine', '.hbs');
 app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
 // API Routes
 app.use('/api/restaurants', require('./routes/restaurants'));
@@ -463,10 +465,16 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Check if we're on Vercel
+if (process.env.VERCEL) {
+  // Export for Vercel serverless functions
+  module.exports = app;
+} else {
+  // Local development
+  app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`🔗 API available at http://localhost:${PORT}/api/restaurants`);
     console.log(`🔍 Search page: http://localhost:${PORT}/restaurants/search`);
     console.log(`🏪 Add restaurant: http://localhost:${PORT}/restaurants/create`);
-});
+  });
+}

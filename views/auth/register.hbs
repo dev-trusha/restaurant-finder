@@ -1,0 +1,119 @@
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h2 class="card-title text-center mb-4">📝 Create Account</h2>
+                
+                {{#if error}}
+                    <div class="alert alert-danger">{{error}}</div>
+                {{/if}}
+                
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required minlength="3">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                        <div class="form-text">Must be at least 6 characters</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Account Type</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="user">👤 Regular User</option>
+                            <option value="admin">👑 Admin (for testing)</option>
+                        </select>
+                        <div class="form-text">Admins can delete restaurants</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            Create Account
+                        </button>
+                        <a href="/auth/login" class="btn btn-outline-secondary">
+                            Already have an account? Login
+                        </a>
+                    </div>
+                </form>
+                
+                <div id="registerMessage" class="mt-3" style="color:red;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('registerForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const msgEl = document.getElementById('registerMessage');
+        msgEl.textContent = '';
+        
+        // Get form data
+        const formData = new FormData(e.target);
+        const payload = Object.fromEntries(formData);
+        
+        // Check password confirmation
+        const confirmPassword = document.getElementById('confirmPassword').value;
+        if (payload.password !== confirmPassword) {
+            msgEl.textContent = 'Passwords do not match';
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok && data.success && data.token) {
+                // Store in all places
+                localStorage.setItem('authToken', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                var maxAge = 24 * 60 * 60; // 1 day in seconds
+                document.cookie = 'token=' + data.token + '; path=/; max-age=' + maxAge;
+                document.cookie = 'user=' + encodeURIComponent(JSON.stringify(data.user)) + '; path=/; max-age=' + maxAge;
+                
+                // Redirect via server to set session
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/auth/set-session';
+                form.style.display = 'none';
+                
+                var tokenInput = document.createElement('input');
+                tokenInput.type = 'hidden';
+                tokenInput.name = 'token';
+                tokenInput.value = data.token;
+                form.appendChild(tokenInput);
+                
+                var userInput = document.createElement('input');
+                userInput.type = 'hidden';
+                userInput.name = 'user';
+                userInput.value = JSON.stringify(data.user);
+                form.appendChild(userInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            } else {
+                msgEl.textContent = data.message || data.error || 'Registration failed';
+            }
+        } catch (err) {
+            msgEl.textContent = 'Network error';
+            console.error(err);
+        }
+    });
+</script>

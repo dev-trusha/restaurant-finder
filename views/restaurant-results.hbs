@@ -68,6 +68,8 @@
                             <a href="/restaurants/{{this._id}}" class="btn btn-primary">
                                 View Details 👀
                             </a>
+                            {{#if ../user}}
+                            {{#if (eq ../user.role "admin")}}
                             <div class="btn-group" role="group">
                                 <a href="/restaurants/{{this._id}}/edit" class="btn btn-outline-warning">
                                     ✏️ Edit
@@ -76,6 +78,8 @@
                                     🗑️ Delete
                                 </a>
                             </div>
+                            {{/if}}
+                            {{/if}}
                         </div>
                     </div>                
                 </div>

@@ -1,3 +1,4 @@
+{{#if user}}
 <div class="row">
     <div class="col-md-8 mx-auto">
         <div class="card">
@@ -197,3 +198,12 @@
         </div>
     </div>
 </div>
+{{else}}
+    <div class="alert alert-warning text-center">
+        <h4>🔒 Login Required</h4>
+        <p>You need to be logged in to edit restaurants.</p>
+        <div class="mt-3">
+            <a href="/auth/login" class="btn btn-primary">Login</a>
+        </div>
+    </div>
+{{/if}}

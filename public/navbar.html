@@ -1,0 +1,23 @@
+<nav class="navbar">
+    <div class="navbar-container">
+        <a href="/" class="navbar-logo">🍽️ Restaurant Finder</a>
+        
+        <div class="navbar-menu">
+            <!-- Show if logged out -->
+            <div data-show-if-logged-out>
+                <a href="/login" class="nav-link">Login</a>
+                <a href="/register" class="nav-link">Register</a>
+            </div>
+
+            <!-- Show if logged in -->
+            <div data-show-if-logged-in>
+                <span id="username" class="nav-username"></span>
+                <a href="/profile" class="nav-link">Profile</a>
+                <a href="/restaurants/create" class="nav-link">Add Restaurant</a>
+                <button onclick="logout()" class="nav-logout">Logout</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<script src="/js/auth.js"></script>

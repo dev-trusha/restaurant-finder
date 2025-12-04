@@ -4,6 +4,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const exphbs = require('express-handlebars');
 const path = require('path');
+const cookieParser = require('cookie-parser');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -95,16 +97,202 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());    
 app.use(express.static(path.join(__dirname, 'public')));
-//for vercel deployment
-// app.use(express.static('public'));
+
+// Middleware to check auth on EVERY request
+app.use(async (req, res, next) => {
+    // Try multiple sources for token
+    let token;
+    let user;
+    
+    // 1. Check Authorization header (API calls)
+    if (req.headers.authorization?.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+    // 2. Check cookies (server-side rendering)
+    else if (req.cookies?.token) {
+        token = req.cookies.token;
+        try {
+            user = req.cookies.user ? JSON.parse(decodeURIComponent(req.cookies.user)) : null;
+        } catch (e) {
+            console.log('Error parsing user cookie:', e.message);
+        }
+    }
+    // 3. Check query parameter (links)
+    else if (req.query.token) {
+        token = req.query.token;
+    }
+    // 4. Check session (if using express-session)
+    
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_123');
+            
+            // If we have user from cookie, use it, otherwise decode from token
+            if (!user) {
+                // Try to get user from database for full details
+                try {
+                    const User = require('./models/User');
+                    const dbUser = await User.findById(decoded.id).select('-password').lean();
+                    if (dbUser) {
+                        user = dbUser;
+                    } else {
+                        user = {
+                            id: decoded.id,
+                            email: decoded.email,
+                            role: decoded.role || 'user'
+                        };
+                    }
+                } catch (dbError) {
+                    // If DB fails, use token data
+                    user = {
+                        id: decoded.id,
+                        email: decoded.email,
+                        role: decoded.role || 'user'
+                    };
+                }
+            }
+            
+            // Make user available to templates
+            res.locals.user = user;
+            req.user = user;
+            
+        } catch (error) {
+            console.log('Token verification failed:', error.message);
+            // Clear invalid tokens
+            res.clearCookie('token');
+            res.clearCookie('user');
+        }
+    }
+    
+    next();
+});
 
 // API Routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/restaurants', require('./routes/restaurants'));
+
 
 // Template Routes
 app.get('/', (req, res) => {
     res.render('index');
+});
+
+// Auth Routes (UI)
+app.get('/auth/login', (req, res) => {
+    res.render('auth/login', { 
+        user: req.user || null,
+        error: req.query.error 
+    });
+});
+
+// Set session after login
+app.post('/auth/set-session', (req, res) => {
+    try {
+        const { token, user } = req.body;
+        
+        // Set cookie
+        res.cookie('token', token, {
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+        });
+        
+        res.cookie('user', user, {
+            maxAge: 24 * 60 * 60 * 1000,
+            httpOnly: false, // Allow JavaScript to read
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+        });
+        
+        res.redirect('/');
+    } catch (error) {
+        res.redirect('/auth/login?error=Session+failed');
+    }
+});
+
+// Quick login check endpoint
+app.get('/auth/check', (req, res) => {
+    const token = req.cookies?.token || req.query.token;
+    
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_123');
+            res.json({ loggedIn: true, user: decoded });
+        } catch {
+            res.json({ loggedIn: false });
+        }
+    } else {
+        res.json({ loggedIn: false });
+    }
+});
+
+app.get('/auth/register', (req, res) => {
+    res.render('auth/register', { 
+        user: req.user || null,
+        error: req.query.error 
+    });
+});
+
+// Protect restaurant creation page
+app.get('/restaurants/create', (req, res, next) => {
+    // Check if user is logged in (simple version)
+    const token = req.cookies?.token || req.query.token;
+    
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_123');
+            req.user = decoded;
+            next();
+        } catch {
+            res.redirect('/auth/login');
+        }
+    } else {
+        res.redirect('/auth/login');
+    }
+}, (req, res) => {
+    res.render('restaurant-create', {
+        user: req.user,
+        restaurant: {},
+        errors: {}
+    });
+});
+
+// Middleware to add user to all views
+app.use((req, res, next) => {
+    // Check for token in cookies, query, or header
+    let token;
+    
+    if (req.cookies?.token) {
+        token = req.cookies.token;
+    } else if (req.query.token) {
+        token = req.query.token;
+    } else if (req.headers.authorization?.startsWith('Bearer ')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+    
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_123');
+            res.locals.user = decoded; // Make user available in all views
+            req.user = decoded;
+        } catch (error) {
+            // Token invalid, continue without user
+        }
+    }
+    
+    next();
+});
+// Logout route - SIMPLE VERSION
+app.get('/auth/logout', (req, res) => {
+    // Clear ALL cookies
+    res.clearCookie('token');
+    res.clearCookie('user');
+    
+    // Redirect immediately to home
+    res.redirect('/');
 });
 
 app.get('/restaurants/search', (req, res) => {
@@ -166,6 +354,7 @@ app.get('/restaurants/search/results', async (req, res) => {
         res.render('restaurant-results', {
             restaurants,
             searchParams: req.query,
+            user: req.user,
             pagination: {
                 page: pageNum,
                 perPage: perPageNum,
@@ -186,13 +375,6 @@ app.get('/restaurants/search/results', async (req, res) => {
             errors: [{ msg: 'Error performing search' }]
         });
     }
-});
-
-app.get('/restaurants/create', (req, res) => {
-    res.render('restaurant-create', {
-        restaurant: {},
-        errors: {}
-    });
 });
 
 app.post('/restaurants', async (req, res) => {
@@ -268,7 +450,7 @@ app.get('/restaurants/:id', async (req, res) => {
             return res.status(404).render('error', { message: 'Restaurant not found' });
         }
 
-        res.render('restaurant-details', { restaurant });
+        res.render('restaurant-details', { restaurant, user: req.user });
 
     } catch (error) {
         console.error('Restaurant details error:', error);
@@ -277,9 +459,19 @@ app.get('/restaurants/:id', async (req, res) => {
 });
 
 
-// EDIT restaurant form
+// EDIT restaurant form (Admin only)
 app.get('/restaurants/:id/edit', async (req, res) => {
     try {
+        // Check if user is logged in and is admin
+        if (!req.user) {
+            return res.redirect('/auth/login?error=Please+login+to+continue');
+        }
+        if (req.user.role !== 'admin') {
+            return res.status(403).render('error', { 
+                message: 'Access denied. Only admins can edit restaurants.' 
+            });
+        }
+
         // Check DB connection
         if (mongoose.connection.readyState !== 1) {
             return res.status(503).render('error', { 
@@ -312,9 +504,19 @@ app.get('/restaurants/:id/edit', async (req, res) => {
     }
 });
 
-// UPDATE restaurant
+// UPDATE restaurant (Admin only)
 app.post('/restaurants/:id/update', async (req, res) => {
     try {
+        // Check if user is logged in and is admin
+        if (!req.user) {
+            return res.redirect('/auth/login?error=Please+login+to+continue');
+        }
+        if (req.user.role !== 'admin') {
+            return res.status(403).render('error', { 
+                message: 'Access denied. Only admins can update restaurants.' 
+            });
+        }
+
         // Check DB connection
         if (mongoose.connection.readyState !== 1) {
             return res.render('restaurant-edit', {
@@ -390,9 +592,19 @@ app.post('/restaurants/:id/update', async (req, res) => {
     }
 });
 
-// DELETE restaurant (with confirmation)
+// DELETE restaurant (with confirmation) - Admin only
 app.get('/restaurants/:id/delete', async (req, res) => {
     try {
+        // Check if user is logged in and is admin
+        if (!req.user) {
+            return res.redirect('/auth/login?error=Please+login+to+continue');
+        }
+        if (req.user.role !== 'admin') {
+            return res.status(403).render('error', { 
+                message: 'Access denied. Only admins can delete restaurants.' 
+            });
+        }
+
         // Check DB connection
         if (mongoose.connection.readyState !== 1) {
             return res.status(503).render('error', { 
@@ -424,9 +636,19 @@ app.get('/restaurants/:id/delete', async (req, res) => {
     }
 });
 
-// DELETE restaurant (confirm)
+// DELETE restaurant (confirm) - Admin only
 app.post('/restaurants/:id/delete', async (req, res) => {
     try {
+        // Check if user is logged in and is admin
+        if (!req.user) {
+            return res.redirect('/auth/login?error=Please+login+to+continue');
+        }
+        if (req.user.role !== 'admin') {
+            return res.status(403).render('error', { 
+                message: 'Access denied. Only admins can delete restaurants.' 
+            });
+        }
+
         const Restaurant = require('./models/Restaurant');
         const restaurant = await Restaurant.findByIdAndDelete(req.params.id);
 

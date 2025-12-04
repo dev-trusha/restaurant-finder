@@ -9,6 +9,8 @@
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h1 class="mb-0">{{restaurant.name}}</h1>
+                {{#if user}}
+                {{#if (eq user.role "admin")}}
                 <div class="btn-group">
                     <a href="/restaurants/{{restaurant._id}}/edit" class="btn btn-warning btn-sm">
                         ✏️ Edit
@@ -17,6 +19,8 @@
                         🗑️ Delete
                     </a>
                 </div>
+                {{/if}}
+                {{/if}}
             </div><br/>
 
                 <div>

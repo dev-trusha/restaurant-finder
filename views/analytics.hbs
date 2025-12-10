@@ -1,0 +1,94 @@
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-lg-12">
+            <h1 class="display-4 mb-2">📊 Restaurant Analytics Dashboard</h1>
+            <p class="lead text-muted">Explore insights about restaurant ratings, cuisines, and locations</p>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row g-4">
+        <!-- Rating Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">⭐ Restaurant Ratings Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <iframe
+                        style="width: 100%; height: 400px; border: none; border-radius: 4px;"
+                        src="{{{chartRating}}}"
+                        title="Restaurant Ratings Distribution"
+                        allowFullScreen
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cuisine Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">🍜 Cuisine Types Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <iframe
+                        style="width: 100%; height: 400px; border: none; border-radius: 4px;"
+                        src="{{{chartCuisine}}}"
+                        title="Cuisine Types Analysis"
+                        allowFullScreen
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- City Chart -->
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">📍 Restaurants by City</h5>
+                </div>
+                <div class="card-body">
+                    <iframe
+                        style="width: 100%; height: 450px; border: none; border-radius: 4px;"
+                        src="{{{chartCity}}}"
+                        title="Restaurants by City"
+                        allowFullScreen
+                    ></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="row mt-5">
+        <div class="col-lg-12">
+            <div class="alert alert-info" role="alert">
+                <h5>💡 About These Charts</h5>
+                <p class="mb-0">These analytics are powered by MongoDB Atlas Charts and provide real-time insights into our restaurant database. Data is automatically refreshed every 4 hours to ensure you always see the latest information.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border: 1px solid #e0e0e0;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .card-header {
+        padding: 1rem 1.25rem;
+        font-weight: 500;
+    }
+
+    iframe {
+        display: block;
+        width: 100%;
+    }
+</style>

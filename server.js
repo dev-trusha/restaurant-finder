@@ -192,6 +192,9 @@ app.post('/auth/set-session', (req, res) => {
     try {
         const { token, user } = req.body;
         
+        // Convert user to string if it's an object
+        const userString = typeof user === 'string' ? user : JSON.stringify(user);
+        
         // Set cookie
         res.cookie('token', token, {
             maxAge: 24 * 60 * 60 * 1000, // 1 day
@@ -200,7 +203,7 @@ app.post('/auth/set-session', (req, res) => {
             sameSite: 'strict'
         });
         
-        res.cookie('user', user, {
+        res.cookie('user', userString, {
             maxAge: 24 * 60 * 60 * 1000,
             httpOnly: false, // Allow JavaScript to read
             secure: process.env.NODE_ENV === 'production',
@@ -260,31 +263,6 @@ app.get('/restaurants/create', (req, res, next) => {
     });
 });
 
-// Middleware to add user to all views
-app.use((req, res, next) => {
-    // Check for token in cookies, query, or header
-    let token;
-    
-    if (req.cookies?.token) {
-        token = req.cookies.token;
-    } else if (req.query.token) {
-        token = req.query.token;
-    } else if (req.headers.authorization?.startsWith('Bearer ')) {
-        token = req.headers.authorization.split(' ')[1];
-    }
-    
-    if (token) {
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev_secret_123');
-            res.locals.user = decoded; // Make user available in all views
-            req.user = decoded;
-        } catch (error) {
-            // Token invalid, continue without user
-        }
-    }
-    
-    next();
-});
 // Logout route - SIMPLE VERSION
 app.get('/auth/logout', (req, res) => {
     // Clear ALL cookies
@@ -295,10 +273,21 @@ app.get('/auth/logout', (req, res) => {
     res.redirect('/');
 });
 
+// Analytics Dashboard - Display MongoDB Atlas Charts
+app.get('/analytics', (req, res) => {
+    res.render('analytics', {
+        chartRating: process.env.ATLAS_CHART_RATING,
+        chartCuisine: process.env.ATLAS_CHART_CUISINE,
+        chartCity: process.env.ATLAS_CHART_CITY,
+        user: req.user || null
+    });
+});
+
 app.get('/restaurants/search', (req, res) => {
     res.render('restaurant-search', {
         searchParams: req.query,
-        errors: null
+        errors: null,
+        user: req.user || null
     });
 });
 
@@ -308,7 +297,8 @@ app.get('/restaurants/search/results', async (req, res) => {
         if (mongoose.connection.readyState !== 1) {
             return res.render('restaurant-search', {
                 searchParams: req.query,
-                errors: [{ msg: 'Database not available. Please try again.' }]
+                errors: [{ msg: 'Database not available. Please try again.' }],
+                user: req.user || null
             });
         }
 
@@ -354,7 +344,7 @@ app.get('/restaurants/search/results', async (req, res) => {
         res.render('restaurant-results', {
             restaurants,
             searchParams: req.query,
-            user: req.user,
+            user: req.user || null,
             pagination: {
                 page: pageNum,
                 perPage: perPageNum,
@@ -372,7 +362,8 @@ app.get('/restaurants/search/results', async (req, res) => {
         console.error('Search error:', error);
         res.render('restaurant-search', {
             searchParams: req.query,
-            errors: [{ msg: 'Error performing search' }]
+            errors: [{ msg: 'Error performing search' }],
+            user: req.user || null
         });
     }
 });
@@ -429,7 +420,8 @@ app.post('/restaurants', async (req, res) => {
 
         res.render('restaurant-create', {
             restaurant: req.body,
-            errors
+            errors,
+            user: req.user || null
         });
     }
 });
@@ -450,7 +442,7 @@ app.get('/restaurants/:id', async (req, res) => {
             return res.status(404).render('error', { message: 'Restaurant not found' });
         }
 
-        res.render('restaurant-details', { restaurant, user: req.user });
+        res.render('restaurant-details', { restaurant, user: req.user || null });
 
     } catch (error) {
         console.error('Restaurant details error:', error);
@@ -493,7 +485,8 @@ app.get('/restaurants/:id/edit', async (req, res) => {
                 ...restaurant,
                 _id: restaurant._id.toString()
             },
-            errors: {}
+            errors: {},
+            user: req.user || null
         });
 
     } catch (error) {
@@ -521,7 +514,8 @@ app.post('/restaurants/:id/update', async (req, res) => {
         if (mongoose.connection.readyState !== 1) {
             return res.render('restaurant-edit', {
                 restaurant: { _id: req.params.id, ...req.body },
-                errors: { general: 'Database not available. Please try again.' }
+                errors: { general: 'Database not available. Please try again.' },
+                user: req.user || null
             });
         }
 
@@ -587,7 +581,8 @@ app.post('/restaurants/:id/update', async (req, res) => {
                 ...req.body,
                 _id: req.params.id
             },
-            errors
+            errors,
+            user: req.user || null
         });
     }
 });
@@ -625,7 +620,8 @@ app.get('/restaurants/:id/delete', async (req, res) => {
             restaurant: {
                 ...restaurant,
                 _id: restaurant._id.toString()
-            }
+            },
+            user: req.user || null
         });
 
     } catch (error) {
